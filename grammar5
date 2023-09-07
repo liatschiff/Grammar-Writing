@@ -1,0 +1,555 @@
+# Symbols in the grammar are case-sensitive.
+#
+# This grammar uses a convention that
+#    - terminals are lowercase          (president)
+#    - preterminals are capitalized     (Noun)
+#    - other nonterminals are all-caps  (NP)
+#
+# This convention just makes grammars more readable to humans.  Thus:
+#
+#    - When *you* are writing grammars, you should
+#      follow this convention unless you have a good reason not to.
+#
+#    - But the  *program* should still work with grammars that don't
+#      follow this convention.  So how can the program reliably tell
+#      the difference between terminal and nonterminal symbols?  If
+#      there is at least one rule for rewriting a symbol, then that
+#      symbol is a nonterminal and should be rewritten.
+#######################
+
+# Rules for creating full sentences.
+
+1   ROOT	S .
+1	ROOT	S !
+1	ROOT	is it true that S ?
+1   ROOT    YNQ ?
+
+# The basic grammar rules.  Here's what the abbreviations stand for:
+#    S  = sentence
+#    SBAR = Subordinate clause
+#    NP = noun phrase
+#    Nnp = proper noun
+#    Prp = Personal pronoun
+#    VP = verb phrase
+#    PP = prepositional phrase
+#    Det = determiner (sometimes called "article")
+#    Prep = preposition
+#    ADJP, PADJP = adjective phrase
+#    Adj = adjectivethat starts with consonant
+#    VowAdj = adjective that starts with vowel
+#    Noun = noun that starts with consonant
+#    Noun = noun that starts with vowel
+#    ADVP = adverb phrase
+#    Rb = adverb
+#    Vbg = Verb gerund or present participle
+#    Vbd = verb,past form
+#    Vbz = verb, 3rd person singular present
+#    Vbp = Verb, present tense, other than third person singular
+#    Cconj = conjunctions (coordination rule template)
+#    Sconj = subordinating conjunction (a subordinating conjunction is a conjunction that links constructions by making one of them a constituent of the other.)
+#    AUX = auxiliary
+#    Vp_intran = Intransitive verb present form
+#    Vp_trans = Transitive verb present form
+#    Vbn = Verb, past participle
+#    MdPast = Model verbs in the past form
+#    NNS = Noun, plural
+
+
+
+# To create these rules we were helped by spaCy library and Stanford algo (link: corenlp.run), as Reut recommended.
+
+
+## PART_5 AND PART_4 AND PART_2
+#################################################################################################################################################################
+1.0 S   S_VBD
+1.0 S   S_PRESENT
+
+###### Plural vs singular ###########
+1.0 S_VBD  NP VP_VBD                   # for generating sentences in the single past form.
+1.0 S_PRESENT  NP VP_PRESENT_S         # for generating sentences in the single present form.
+
+1.0 S_VBD  NNS VP_VBD                  # for generating sentences in the plural past form.
+1.0 S_PRESENT  NNS VP_PRESENT_P        # for generating sentences in the plural present form.
+#####################################
+
+###### Plural vs singular ###########
+1.0 VP_PRESENT_S  Vbz ADJP             # for generating sentences such as PART2(h) "Sally is lazy ."
+1.0 VP_PRESENT_S  Vbz VowAdj           # for generating sentences such as "Sally is old ."
+1.0 VP_PRESENT_S  Vbz Vbg NP           # for generating sentences such as PART2(i) "is eating a sandwich ."
+1.0 VP_PRESENT_S  Vbz Vbg NNS          # for generating sentences such as "is eating sandwiches ."
+1.0 VP_PRESENT_S  Vbz Vbg_prep PP      # for generating sentences such as "is eating on a desk ."
+1.0 VP_PRESENT_S  Vbz NP               # for generating sentences such as PART2(j) "... sally is a sandwich ."
+
+1.0 VP_PRESENT_P  Vbp PADJP            # for generating sentences such as "women are smart ."
+1.0 VP_PRESENT_P  Vbp Vbg NP           # for generating sentences such as "the girls are eating a sandwich ."
+1.0 VP_PRESENT_P  Vbp Vbg NNS          # for generating sentences such as "the girls are eating sandwiches ."
+1.0 VP_PRESENT_P  Vbp Vbg_prep PP      # for generating sentences such as "the girls are eating on a desk ."
+1.0 VP_PRESENT_P  Vbp NNS              # for generating sentences such as "are sandwiches ."
+#####################################
+
+1.0 VP_VBD Vbd_sconj SBAR              # for generating sentences such as PART2(d) "the president thought that a sandwich sighed ."
+
+###### Plural vs singular ###########
+0.01    SBAR Sconj NP Vbz NP           # for generating sentences such as PART2(j) "that Sally is a sandwich ."
+0.01    SBAR Sconj NNS Vbp NNS         # for generating sentences such as "that people are sandwiches ."
+0.01 S_VBD  Prp Vbd_np_sconj NP SBAR    # for generating sentences such as PART2(e) "it perplexed the president that a sandwich ate Sally ."
+0.01 S_VBD  PluralPrp Vbd_np_sconj NP SBAR      # for generating sentences such as "they perplexed the president that a sandwich ate Sally ."
+0.01 S_VBD  PluralPrp Vbd_np_sconj NNS SBAR     # for generating sentences such as "they perplexed men that a sandwich ate Sally ."
+#####################################
+
+1.0 SBAR    Sconj S_VBD                # for generating sentences such as PART2(d) "that a sandwich sighed ."  and  PART2(e)"that a sandwich ate Sally ."
+
+###### Plural vs singular ###########
+1.0 VP_VBD Vbd NP                      # for generating sentences in the past singular form.
+1.0 VP_VBD Vbd NNS                     # for generating sentences in the past plural form.
+#####################################
+
+1.0 VP_VBD Vbd_intran                  # for generating sentences such as PART2(c) "the president sighed ."
+
+1.0 VP_VBD Vbd_prep PP                # for generating sentences such as PART2(g) "worked on every proposal on the desk ."
+
+0.2 Vbd  Vbd Cconj Vbd                # for generating sentences such as PART2(b) "wanted and ate"
+
+###### Plural vs singular ###########
+0.01 NNS  NP Cconj NP                 # we replaced the rule 'NP -> NP Cconj NP' in this one for solving the problem in part2 (• Furthermore, note that handling sentences (b) and (h)/(i) can interact in a bad way, to create ungrammatical sentences. You do not need to solve this issue in this part of the assignment, but you do need to discuss it and explain what the problem is, using an example and a short explanation.)
+
+6.0 NP  Det Noun
+0.5 NP  Det Noun PP
+6.0 NP  Det VowNoun
+0.5 NP  Det VowNoun PP
+
+6.0 NNS  PluralDet PluralNoun            # for generating with the phrases such as "the girls"
+0.5 NNS  PluralDet PluralNoun PP         # for generating sentences such as "the girls ate on the desk ."
+6.0 NNS PluralNoun                       # for generating with the phrases such as "girls"
+0.5 NNS PluralNoun PP                    # for generating sentences such as "girls ate on the desk ."
+#####################################
+
+###### 'a' vs 'an' ###########
+# take from the rule that start with Det
+6.0 NP  a Noun
+0.5 NP  a Noun PP
+6.0 NP  an VowNoun
+0.5 NP  an VowNoun PP
+#############################
+
+4.0 NP  Nnp
+
+###### Plural vs singular ###########
+0.9 NP  Det ADJP Noun                 # for generating sentences such as PART2(f) "the very very very perplexed president ate a sandwich ."
+0.1 NP  Det ADJP Noun PP              # for generating sentences such as "the very delicious pickle under the desk ate a sandwich ."
+
+0.9 NNS  PluralDet PADJP PluralNoun                 # for generating sentences such as  "the very very very perplexed boys ate a sandwich ."
+0.1 NNS  PluralDet PADJP PluralNoun PP              # for generating sentences such as "some very delicious people under the desk ate a sandwich ."
+0.9 NNS PADJP PluralNoun              # for generating sentences such as  "very very very perplexed boys ate a sandwich ."
+0.1 NNS PADJP PluralNoun PP           # for generating sentences such as "very delicious people under the desk ate a sandwich ."
+#####################################
+
+0.9 NP  Det ADJP VowNoun
+0.1 NP  Det ADJP VowNoun PP
+
+0.9 NP  Det VowAdj Noun
+0.1 NP  Det VowAdj Noun PP
+
+0.9 NP  Det VowAdj VowNoun
+0.1 NP  Det VowAdj VowNoun PP
+
+###### 'a' vs 'an' ###########
+0.9 NP  a ADJP Noun
+0.1 NP  a ADJP Noun PP
+
+0.9 NP  a ADJP VowNoun
+0.1 NP  a ADJP VowNoun PP
+
+0.9 NP  an VowAdj Noun
+0.1 NP  an VowAdj Noun PP
+
+0.9 NP  an VowAdj VowNoun
+0.1 NP  an VowAdj VowNoun PP
+#############################
+
+###### Plural vs singular ###########
+###1.0 PluralNoun  PluralAdj PluralNoun
+
+#####################################
+
+###### 'a' vs 'an' ###########
+###1.0 Noun    Adj Noun
+###.0 Noun    Adj VowNoun
+
+###1.0 VowNoun VowAdj Noun
+###1.0 VowNoun VowAdj VowNoun
+#############################
+
+###### Plural vs singular ###########
+1.0 ADJP    ADVP Adj
+1.0 ADJP    ADVP VowAdj
+1.0 ADJP    Adj
+
+1.0 PADJP   ADVP PluralAdj
+1.0 PADJP   PluralAdj
+#####################################
+
+1.0 ADVP  Rb    ADVP
+1.0 ADVP  Rb
+
+0.1 PP  Prep NP
+
+############ YES/NO QUESTION   ##############
+###### Plural vs singular ###########
+1.0 YNQ AUX_S NP Vp_intran                 # can sally work ?
+1.0 YNQ AUX_S NP Vp_trans NP               # does sally eat an apple ?
+
+1.0 YNQ AUX_S NP Vp_sconj SBAR             # does the president think that Sally worked ?
+1.0 YNQ AUX_S NP Vp_prep PP                # does sally work with the president ?
+
+1.0 YNQ AUX_S Prp Vp_np_sconj NP SBAR      # did it perplex sally that Sally ate an apple ?
+1.0 YNQ AUX_S Prp Vp_np_sconj NNS SBAR     # did it perplex the girls that Sally ate an apple ?
+
+1.0 YNQ AUX_P NNS Vp_intran                # can sally and the president work ?
+1.0 YNQ AUX_P NNS Vp_trans NP              # do women eat an apple ?
+
+1.0 YNQ AUX_P NNS Vp_sconj SBAR            # do the girls think that Sally worked ?
+1.0 YNQ AUX_P NNS Vp_prep PP               # do people work with the president ?
+
+1.0 YNQ AUX_P PluralPrp Vp_np_sconj NP SBAR  # did they perplex sally that Sally ate an apple ?
+1.0 YNQ AUX_P PluralPrp Vp_np_sconj NNS SBAR # did they perplex the girls that Sally ate an apple ?
+#####################################
+
+#######  Question is .... ? #########
+###### Plural vs singular ###########
+1.0 YNQ Vbz NP Vbg NP               # is Sally eating an apple ?
+1.0 YNQ Vbz NP Vbg NNS              # is Sally eating apples ?
+1.0 YNQ Vbz NP Vbg_prep PP          # is Sally eating on a desk ?
+1.0 YNQ Vbz NP NP                   # is Sally an orange ?
+1.0 YNQ Vbz NP ADJP                 # is Sally delicious ?
+1.0 YNQ Vbz NP ADJP Cconj ADJP      # is Sally delicious and lazy ?
+1.0 YNQ Vbz NP VowAdj               # is Sally intelligent ?
+1.0 YNQ Vbz NP VowAdj Cconj ADJP    # is Sally intelligent and delicious ?
+1.0 YNQ Vbz NP ADJP Cconj VowAdj    # is Sally delicious and intelligent ?
+1.0 YNQ Vbz NP VowAdj Cconj VowAdj  # is Sally actual and intelligent ?
+
+1.0 YNQ Vbp NNS Vbg NP              # are boys eating an apple ?
+1.0 YNQ Vbp NNS Vbg NNS             # are boys eating apples ?
+1.0 YNQ Vbp NNS Vbg_prep PP         # are boys eating on a desk ?
+1.0 YNQ Vbp NNS NNS                 # are children oranges ?
+1.0 YNQ Vbp NNS PADJP               # are children delicious ?
+1.0 YNQ Vbp NNS PADJP Cconj PADJP   # are many girls delicious and lazy ?
+#####################################
+0.5 Vp_trans Vp_trans Cconj Vp_trans
+
+0.2 Vp_trans Vp_intran Cconj Vp_intran
+
+
+## PART_5 PART_4 AND PART_2
+#################################################################################################################################################################
+###### Plural vs singular ###########
+1.0 VP_PRESENT_S  has NP                              # we added this rule for generating sentences such as "Sally has a sandwich ."
+1.0 VP_PRESENT_S  has NP                              # we added this rule for generating sentences such as "Sally has a sandwich ."
+1.0 VP_PRESENT_S  has NNS                             # we added this rule for generating sentences such as "Sally has sandwiches ."
+1.0 VP_PRESENT_S  has to Vp_intran                    # we added this rule for generating sentences such as "Sally has to eat ."
+1.0 VP_PRESENT_S  has to Vp_prep PP                   # we added this rule for generating sentences such as "Sally has to stay with the president ."
+1.0 VP_PRESENT_S  has to Vp_np_sconj NP SBAR          # we added this rule for generating sentences such as "Sally has to perplex the president that a sandwich ate liat ."
+1.0 VP_PRESENT_S  has to Vp_np_sconj NNS SBAR         # we added this rule for generating sentences such as "Sally has to perplex presidents that a sandwich ate liat ."
+
+1.0 VP_PRESENT_P  have NP                             # we added this rule for generating sentences such as "people have a sandwich ."
+1.0 VP_PRESENT_P  have NNS                            # we added this rule for generating sentences such as "people have sandwiches ."
+1.0 VP_PRESENT_P  have to Vp_intran                   # we added this rule for generating sentences such as "people have to eat ."
+1.0 VP_PRESENT_P  have to Vp_prep PP                  # we added this rule for generating sentences such as "Sally and liat have to stay with the president ."
+1.0 VP_PRESENT_P  have to Vp_np_sconj NP SBAR         # we added this rule for generating sentences such as "Sally and liat have to perplex the president that a sandwich ate liat ."
+1.0 VP_PRESENT_P  have to Vp_np_sconj NNS SBAR        # we added this rule for generating sentences such as "Sally and liat have to perplex presidents that a sandwich ate liat ."
+#####################################
+
+###### Plural vs singular ###########
+1.0 VP_PRESENT_S  has VP_VBN                        # present perfect form
+1.0 VP_PRESENT_P  have VP_VBN                       # present perfect form
+#####################################
+
+1.0 VP_VBD  MdPast have VP_VBN                      # should/could + have + (past participle)
+
+## makes a problem now = 1.0 VP_VBD was Vbn by NP                           # we added this rule for generating sentences such as "Sally was perplexed by the president ."
+
+###### Plural vs singular ###########
+1.0 VP_VBN  Vbn NP                                  # we added this rule for generating sentences such as "a girl has writen a letter .", "a girl should have writen a letter ."
+1.0 VP_VBN Vbn_prep PP                              # we added this rule for generating sentences such as "liat has worked on every proposal on the desk .", "liat should have worked on every proposal on the desk ."
+1.0 VP_VBN  Vbn NNS                                 # we added this rule for generating sentences such as "a girl has writen letters .", "a girl should have writen the letters ."
+#####################################
+
+1.0 VP_VBN  Vbn_intran                              # we added this rule for generating sentences such as "ido has eaten.", "ido could have eaten."
+1.0 Vbn  Vbn Cconj Vbn                                # we added this rule for generating sentences such as "madona has wanted and kissed the boy.", "madona could have wanted and kissed the boy."
+
+
+
+
+
+# Vocabulary.  Your program can see that "ate" is a terminal
+# symbol because there exists no rule for rewriting it.
+# Any symbol that can rewrite as a terminal (or a string of
+# terminals, like "chief of staff") is called a "preterminal."  Notice
+# that a preterminal is a special kind of nonterminal.
+
+1.0 MdPast  should
+1.0 MdPast  could
+
+# V3 form verbs that are transitive
+1.0 Vbn	eaten
+1.0 Vbn	wanted
+1.0 Vbn	kissed
+1.0 Vbn	pickled
+1.0 Vbn perplexed
+1.0 Vbn understood
+1.0 Vbn gotten           # added new word
+1.0 Vbn writen           # added new word
+1.0 Vbn driven           # added new word
+
+# V3 form verbs that are intransitive
+1.0 Vbn_intran	eaten
+1.0 Vbn_intran	sighed
+1.0 Vbn_intran  worked
+1.0 Vbn_intran  gone   # added new word
+1.0 Vbn_intran  danced   # added new word
+
+# V3 form verbs + that-clause
+1.0 Vbn_sconj   understood
+1.0 Vbn_sconj   thought
+1.0 Vbn_sconj   felt
+1.0 Vbn_sconj   wanted
+
+# V3 form verbs followed by an indirect object and a that-clause
+1.0 Vbn_np_sconj    perplexed
+1.0 Vbn_np_sconj    convinced   # added new word
+
+# V3 form verbs + a preposition
+1.0 Vbn_prep  eaten
+1.0 Vbn_prep  sighed
+1.0 Vbn_prep  worked
+1.0 Vbn_prep  stayed            # added new word
+1.0 Vbn_prep  driven           # added new word
+
+
+
+# Present form verbs that are transitive
+1.0 Vp_trans    eat
+1.0 Vp_trans    want
+1.0 Vp_trans    work
+1.0 Vp_trans    love
+1.0 Vp_trans    want
+1.0 Vp_trans    understand
+1.0 Vp_trans    perplex
+1.0 Vp_trans    get           # added new word
+1.0 Vp_trans    write         # added new word
+1.0 Vp_trans    drive         # added new word
+
+# Present form verbs that are intransitive (Read and see examples about this phenomena over here - https://www.citationmachine.net/resources/grammar-guides/verb/transitive-intransitive/#:~:text=When%20there's%20an%20object%20in,word%20is%20an%20intransitive%20verb.)
+1.0 Vp_intran work
+1.0 Vp_intran eat
+1.0 Vp_intran sigh
+1.0 Vp_intran go            # added new word
+1.0 Vp_intran dance         # added new word
+
+# Present form verbs + that-clause
+1.0 Vp_sconj    understand
+1.0 Vp_sconj    think
+1.0 Vp_sconj    feel
+1.0 Vp_sconj    want
+
+# Present form verbs followed by an indirect object and a that-clause
+1.0 Vp_np_sconj perplex
+1.0 Vp_np_sconj convince        # added new word
+
+# Present form verb + prep
+1.0 Vp_prep work
+1.0 Vp_prep eat
+1.0 Vp_prep sigh
+1.0 Vp_prep stay                # added new word
+1.0 Vp_prep drive               # added new word
+
+
+
+# Past form verbs that are transitive
+1.0 Vbd	ate
+1.0 Vbd	wanted
+1.0 Vbd	kissed
+1.0 Vbd	pickled
+1.0 Vbd perplexed
+1.0 Vbd understood
+1.0 Vbd got             # added new word
+1.0 Vbd wrote           # added new word
+1.0 Vbd drove           # added new word
+
+# Past form verbs that are intransitive (Read and see examples about this phenomena over here - https://www.citationmachine.net/resources/grammar-guides/verb/transitive-intransitive/#:~:text=When%20there's%20an%20object%20in,word%20is%20an%20intransitive%20verb.)
+1.0 Vbd_intran	ate
+1.0 Vbd_intran	sighed
+1.0 Vbd_intran  worked
+1.0 Vbd_intran  went   # added new word
+1.0 Vbd_intran  danced   # added new word
+
+# Past form verbs + that-clause (Read and see examples about this phenomena over here - https://dictionary.cambridge.org/grammar/british-grammar/verb-patterns-verb-that-clause)
+1.0 Vbd_sconj   understood
+1.0 Vbd_sconj   thought
+1.0 Vbd_sconj   felt
+1.0 Vbd_sconj   wanted
+
+# Past form verbs followed by an indirect object and a that-clause (Read and see examples about this phenomena over here - https://dictionary.cambridge.org/grammar/british-grammar/verb-patterns-verb-that-clause)
+1.0 Vbd_np_sconj    perplexed
+1.0 Vbd_np_sconj    convinced   # added new word
+
+# Past form verbs + a preposition
+1.0 Vbd_prep  ate
+1.0 Vbd_prep  sighed
+1.0 Vbd_prep  worked
+1.0 Vbd_prep  stayed            # added new word
+1.0 Vbd_prep  drove             # added new word
+
+1.0 AUX_S did
+1.0 AUX_S will
+1.0 AUX_S does
+1.0 AUX_S can
+
+1.0 AUX_P did
+1.0 AUX_P will
+1.0 AUX_P do
+1.0 AUX_P can
+
+1.0 Cconj   and
+1.0 Sconj   that
+
+1.0 Vbz is
+
+# Present progressive form verbs
+1.0 Vbg eating
+1.0 Vbg buying          # added new word
+1.0 Vbg kissing         # added new word
+1.0 Vbg getting         # added new word
+1.0 Vbg understanding   # added new word
+1.0 Vbg writing         # added new word
+1.0 Vbg driving         # added new word
+
+# Present progressive form verbs + a preposition
+1.0 Vbg_prep    eating
+1.0 Vbg_prep    working
+1.0 Vbg_prep    staying   # added new word
+1.0 Vbg_prep    driving   # added new word
+
+1.0 Det	the
+0.01    Det	every
+
+
+
+1.0 Nnp sally
+1.0 Nnp liat                    # added new word
+1.0 Nnp ruben                   # added new word
+1.0 Nnp shakira                 # added new word
+1.0 Nnp madona                  # added new word
+1.0 Nnp angelina                # added new word
+1.0 Nnp tom                     # added new word
+
+1.0 Prp it
+
+1.0	Noun	president
+1.0	Noun	girl                # added new word
+1.0 Noun    boy                 # added new word
+1.0 Noun    doctor              # added new word
+1.0	Noun	sandwich
+1.0	Noun	pickle
+1.0	Noun	chief of staff
+1.0	Noun	floor
+1.0 Noun	proposal
+1.0 Noun	desk
+1.0 Noun	pen                 # added new word
+1.0 Noun	letter              # added new word
+1.0 Noun	car                 # added new word
+1.0 Noun	breakfast           # added new word
+
+1.0 VowNoun apple
+1.0 VowNoun orange
+1.0 VowNoun artist
+1.0 VowNoun hour
+1.0 VowNoun authority
+1.0 VowNoun opinion
+
+1.0	Adj	fine
+1.0	Adj	delicious
+1.0	Adj	perplexed
+1.0	Adj	pickled
+1.0 Adj lazy
+1.0 Adj smart                   # added new word
+1.0 Adj wonderful               # added new word
+1.0 Adj beautiful               # added new word
+1.0 Adj magnificent             # added new word
+1.0 Adj pretty                  # added new word
+1.0 Adj clever                  # added new word
+1.0 Adj nice                    # added new word
+
+1.0 VowAdj  easy
+1.0 VowAdj  hard
+1.0 VowAdj  important
+1.0 VowAdj  actual
+1.0 VowAdj  intelligent
+1.0 VowAdj  old
+
+1.0 Rb  very
+
+0.7	Prep	with
+1.0	Prep	on
+1.0	Prep	under
+1.0	Prep	in
+
+
+
+
+1.0 PluralPrp they
+
+1.0	Vbp    are
+
+1.0	PluralNoun presidents
+1.0	PluralNoun	girls
+1.0	PluralNoun	boys
+1.0	PluralNoun	women           # added new word
+1.0	PluralNoun	men             # added new word
+1.0 PluralNoun  children        # added new word
+1.0 PluralNoun  people          # added new word
+1.0 PluralNoun  doctors
+1.0	PluralNoun	sandwiches
+1.0	PluralNoun	pickles
+1.0	PluralNoun	floors
+1.0 PluralNoun	proposals
+1.0 PluralNoun	desks
+1.0 PluralNoun	pens
+1.0 PluralNoun	letters
+1.0 PluralNoun	cars
+1.0 PluralNoun	breakfasts
+1.0 PluralNoun apples
+1.0 PluralNoun oranges
+1.0 PluralNoun artists
+1.0 PluralNoun hours
+1.0 PluralNoun authorities
+1.0 PluralNoun opinions
+
+1.0 PluralDet	the
+1.0 PluralDet	all the             # added new word
+0.2 PluralDet	all                 # added new word
+0.2 PluralDet	some                # added new word
+0.2 PluralDet	these               # added new word
+0.2 PluralDet	those               # added new word
+0.1 PluralDet	many                # added new word
+0.1 PluralDet	few                 # added new word
+
+1.0	PluralAdj	fine
+1.0	PluralAdj	delicious
+1.0	PluralAdj	perplexed
+1.0	PluralAdj	pickled
+1.0 PluralAdj   lazy
+1.0 PluralAdj   smart
+1.0 PluralAdj   wonderful
+1.0 PluralAdj   beautiful
+1.0 PluralAdj   magnificent
+1.0 PluralAdj   pretty
+1.0 PluralAdj   clever
+1.0 PluralAdj   nice
+1.0 PluralAdj   easy
+1.0 PluralAdj   hard
+1.0 PluralAdj   important
+1.0 PluralAdj   actual
+1.0 PluralAdj   intelligent
+1.0 PluralAdj   old
+

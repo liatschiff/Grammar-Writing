@@ -1,0 +1,156 @@
+# Symbols in the grammar are case-sensitive.
+#
+# This grammar uses a convention that
+#    - terminals are lowercase          (president)
+#    - preterminals are capitalized     (Noun)
+#    - other nonterminals are all-caps  (NP)
+#
+# This convention just makes grammars more readable to humans.  Thus:
+#
+#    - When *you* are writing grammars, you should
+#      follow this convention unless you have a good reason not to.
+#
+#    - But the  *program* should still work with grammars that don't
+#      follow this convention.  So how can the program reliably tell
+#      the difference between terminal and nonterminal symbols?  If
+#      there is at least one rule for rewriting a symbol, then that
+#      symbol is a nonterminal and should be rewritten.
+#######################
+
+# Rules for creating full sentences.
+
+4   ROOT	S .
+1	ROOT	S !
+1	ROOT	is it true that S ?     # mixing terminals and nonterminals is ok.
+
+# The basic grammar rules.  Here's what the abbreviations stand for:
+#    S  = sentence
+#    SBAR = Subordinate clause
+#    NP = noun phrase
+#    Nnp = proper noun
+#    Prp = Personal pronoun
+#    VP = verb phrase
+#    PP = prepositional phrase
+#    Det = determiner (sometimes called "article")
+#    Prep = preposition
+#    ADJP = adjective phrase
+#    Adj = adjective
+#    ADVP = adverb phrase
+#    Rb = adverb
+#    Vbg = Verb gerund or present participle
+#    Vbd = verb,past form
+#    Vbz = verb, 3rd person singular present
+#    Cconj = conjunctions (coordination rule template)
+#    Sconj = subordinating conjunction (a subordinating conjunction is a conjunction that links constructions by making one of them a constituent of the other.)
+
+
+# To create these rules we were helped by spaCy library and Stanford algo (link: corenlp.run), as Reut recommended.
+
+1.0 S   S_VBD                       # Added new rule for generating sentences in the past form.
+1.0 S   S_PRESENT                   # Added new rule for generating sentences in the present form.
+1.0 S_VBD  NP VP_VBD                # We replaced the 'S NP VP' rule in this one for generating sentences in the past form.
+1.0 S_PRESENT  NP VP_PRESENT        # We replaced the 'S NP VP' rule in this one for generating sentences in the present form.
+
+1.0 VP_PRESENT  Vbz ADJP            # Added new rule. [We need it for sentence (h) "Sally is lazy ."]
+1.0 VP_PRESENT  Vbz Vbg NP          # Added new rule. [We need it for sentence (i) "is eating a sandwich ."]
+1.0 VP_PRESENT  Vbz NP              # Added new rule. [We need it for sentence (j) "is a sandwich ."]
+
+1.0 VP_VBD Vbd_sconj SBAR           # Added new rule. [We need it for sentence (d) "the president thought that a sandwich sighed ."]
+0.01    SBAR Sconj NP Vbz NP        # Added new rule. [We need it for sentence (j) "that Sally is a sandwich ."]
+
+0.5 S_VBD  Prp Vbd_np_sconj NP SBAR # Added new rule. [We need it for sentence (e) "it perplexed the president that a sandwich ate Sally ."]
+1.0 SBAR    Sconj S_VBD             # Added new rule. [We need it for sentences  (d) "that a sandwich sighed ."  and  (e)"that a sandwich ate Sally ."]
+
+1.0 VP_VBD Vbd NP                   # We replaced the 'VP   Verb NP' rule in this one for generating sentences in the past form.
+1.0 VP_VBD Vbd_intran               # Added new rule. [We need it for sentence (c) "the president sighed ."]
+
+1.0 VP_VBD Vbd_prep PP              # Added new rule. [We need it for sentence (g) "worked on every proposal on the desk ."]
+
+0.2 Vbd  Vbd Cconj Vbd              # Added new rule. [We need it for sentence (b) "wanted and ate"]
+0.2 NP  NP Cconj NP                 # Added new rule. [We need it for sentence (b) "Sally and the president"]
+
+6.0 NP  Det Noun
+0.5 NP  Det Noun PP                 # We replaced the 'NP	NP PP' role in this one for avoiding sentences such as "...it on sally on it with sally with sally...", "...sally with sally in sally..." ,etc.
+4.0 NP  Nnp                         # Added new rule. [Nnp is used for private and company names, in our case we need it for Sally name]
+
+0.9 NP  Det ADJP Noun               # Added new rule. [We need it for sentence (f) "the very very very perplexed president ate a sandwich ."]
+0.1 NP  Det ADJP Noun PP            # Added new rule. [This rule will let us to create sentences such as "the very delicious pickle under the desk ate a sandwich ."]
+
+1.0 Noun    Adj Noun
+
+1.0 ADJP    ADVP Adj                # Added new rule. [We need it for sentence (f) "the very very very perplexed"]
+1.0 ADJP    Adj                     # Added new rule. [We need it for sentence (f)]
+
+1.0 ADVP  Rb    ADVP                # Added new rule. [We need it for sentence (f) "very very very"]
+1.0 ADVP  Rb                        # Added new rule. [We need it for sentence (f) "very very very"]
+
+0.1 PP	Prep NP
+
+
+
+
+
+# Vocabulary.  Your program can see that "ate" is a terminal
+# symbol because there exists no rule for rewriting it.
+# Any symbol that can rewrite as a terminal (or a string of
+# terminals, like "chief of staff") is called a "preterminal."  Notice
+# that a preterminal is a special kind of nonterminal.
+
+1.0 Cconj   and                    # Added new preterminal and terminal
+1.0 Sconj   that                   # Added new preterminal and terminal
+
+1.0 Vbz is                         # Added new preterminal and terminal for generating sentences in the present.
+
+1.0 Vbg eating                     # Added new preterminal and terminal for generating sentences in the present.
+
+1.0 Vbd	ate                        # Added new preterminal. We replaced 'Verb  ate' role with this one
+1.0 Vbd	wanted                     # We replaced 'Verb  wanted' role with this one
+1.0 Vbd	kissed                     # We replaced 'Verb  kissed' role with this one
+1.0 Vbd	pickled                    # We replaced 'Verb  pickled' role with this one
+1.0 Vbd perplexed                  # Added new terminal.
+1.0 Vbd understood                 # We replaced 'Verb  understood' role with this one
+
+# Past form verbs that are intransitive (Read and see examples about this phenomena over here - https://www.citationmachine.net/resources/grammar-guides/verb/transitive-intransitive/#:~:text=When%20there's%20an%20object%20in,word%20is%20an%20intransitive%20verb.)
+1.0 Vbd_intran	ate                # Added new preterminal.
+1.0 Vbd_intran	sighed             # Added new terminal. We need it for sentences (c) and (d)
+1.0 Vbd_intran worked
+
+# Past form verbs + that-clause (Read and see examples about this phenomena over here - https://dictionary.cambridge.org/grammar/british-grammar/verb-patterns-verb-that-clause)
+1.0 Vbd_sconj understood           # Added new preterminal.
+1.0 Vbd_sconj thought              # Added new preterminal and terminal.
+
+# Past form verbs followed by an indirect object and a that-clause (Read and see examples about this phenomena over here - https://dictionary.cambridge.org/grammar/british-grammar/verb-patterns-verb-that-clause)
+1.0 Vbd_np_sconj perplexed         # Added new preterminal. We need it for (e) "it perplexed the president that"
+
+# Past form verbs + a preposition
+1.0 Vbd_prep  ate                  # Added new preterminal
+1.0 Vbd_prep  sighed
+1.0 Vbd_prep  worked
+
+1.0	Det	the
+1.0	Det	a
+0.01    Det	every
+
+1.0 Nnp sally                      # Added new preterminal and terminal.
+1.0 Prp it                         # Added new preterminal and terminal.
+
+1.0	Noun	president
+1.0	Noun	sandwich
+1.0	Noun	pickle
+1.0	Noun	chief of staff
+1.0	Noun	floor
+1.0 Noun	proposal               # Added new terminal.
+1.0 Noun	desk                   # Added new terminal.
+
+1.0	Adj	fine
+1.0	Adj	delicious
+1.0	Adj	perplexed
+1.0	Adj	pickled
+1.0 Adj lazy                       # Added new terminal.
+
+1.0 Rb  very                       # Added new preterminal and terminal.
+
+0.7	Prep	with
+1.0	Prep	on
+1.0	Prep	under
+1.0	Prep	in

@@ -1,0 +1,278 @@
+# a b
+# Symbols in the grammar are case-sensitive.
+#
+# This grammar uses a convention that
+#    - terminals are lowercase          (president)
+#    - preterminals are capitalized     (Noun)
+#    - other nonterminals are all-caps  (NP)
+#
+# This convention just makes grammars more readable to humans.  Thus:
+#
+#    - When *you* are writing grammars, you should
+#      follow this convention unless you have a good reason not to.
+#
+#    - But the  *program* should still work with grammars that don't
+#      follow this convention.  So how can the program reliably tell
+#      the difference between terminal and nonterminal symbols?  If
+#      there is at least one rule for rewriting a symbol, then that
+#      symbol is a nonterminal and should be rewritten.
+#######################
+
+# Rules for creating full sentences.
+
+4   ROOT	S .
+1	ROOT	S !
+1	ROOT	is it true that S ?
+1  ROOT    YNQ ?
+
+# The basic grammar rules.  Here's what the abbreviations stand for:
+#    S  = sentence
+#    SBAR = Subordinate clause
+#    NP = noun phrase
+#    Nnp = proper noun
+#    Prp = Personal pronoun
+#    VP = verb phrase
+#    PP = prepositional phrase
+#    Det = determiner (sometimes called "article")
+#    Prep = preposition
+#    ADJP = adjective phrase
+#    Adj = adjectivethat starts with consonant
+#    VowAdj = adjective that starts with vowel
+#    Noun = noun that starts with consonant
+#    Noun = noun that starts with vowel
+#    ADVP = adverb phrase
+#    Rb = adverb
+#    Vbg = Verb gerund or present participle
+#    Vbd = verb,past form
+#    Vbz = verb, 3rd person singular present
+#    Cconj = conjunctions (coordination rule template)
+#    Sconj = subordinating conjunction (a subordinating conjunction is a conjunction that links constructions by making one of them a constituent of the other.)
+#    AUX = auxiliary
+#    Vp_intran = Intransitive verb present form
+#    Vp_trans = Transitive verb present form
+
+
+
+# To create these rules we were helped by spaCy library and Stanford algo (link: corenlp.run), as Reut recommended.
+
+1.0 S   S_VBD
+1.0 S   S_PRESENT
+1.0 S_VBD  NP VP_VBD
+1.0 S_PRESENT  NP VP_PRESENT
+
+1.0 VP_PRESENT  Vbz ADJP
+1.0 VP_PRESENT  Vbz VowAdj
+
+1.0 VP_PRESENT  Vbz Vbg NP
+1.0 VP_PRESENT  Vbz NP
+
+1.0 VP_VBD Vbd_sconj SBAR
+0.01    SBAR Sconj NP Vbz NP
+
+0.5 S_VBD  Prp Vbd_np_sconj NP SBAR
+1.0 SBAR    Sconj S_VBD
+
+
+1.0 VP_VBD Vbd NP
+1.0 VP_VBD Vbd_intran
+
+1.0 VP_VBD Vbd_prep PP
+
+0.2 Vbd  Vbd Cconj Vbd
+0.2 NP  NP Cconj NP
+
+6.0 NP  Det Noun
+0.5 NP  Det Noun PP
+6.0 NP  Det VowNoun
+0.5 NP  Det VowNoun PP
+
+###### 'a' vs 'an' ###########
+# take from the rule that start with Det
+6.0 NP  a Noun
+0.5 NP  a Noun PP
+6.0 NP  an VowNoun
+0.5 NP  an VowNoun PP
+#############################
+
+4.0 NP  Nnp
+
+0.9 NP  Det ADJP Noun
+0.1 NP  Det ADJP Noun PP
+
+0.9 NP  Det ADJP VowNoun
+0.1 NP  Det ADJP VowNoun PP
+
+0.9 NP  Det VowAdj Noun
+0.1 NP  Det VowAdj Noun PP
+
+0.9 NP  Det VowAdj VowNoun
+0.1 NP  Det VowAdj VowNoun PP
+
+###### 'a' vs 'an' ###########
+0.9 NP  a ADJP Noun
+0.1 NP  a ADJP Noun PP
+
+0.9 NP  a ADJP VowNoun
+0.1 NP  a ADJP VowNoun PP
+
+0.9 NP  an VowAdj Noun
+0.1 NP  an VowAdj Noun PP
+
+0.9 NP  an VowAdj VowNoun
+0.1 NP  an VowAdj VowNoun PP
+
+###### 'a' vs 'an' ###########
+1.0 Noun    Adj Noun
+1.0 Noun    Adj VowNoun
+
+1.0 VowNoun VowAdj Noun
+1.0 VowNoun VowAdj VowNoun
+#############################
+
+1.0 ADJP    ADVP Adj
+1.0 ADJP    ADVP VowAdj
+1.0 ADJP    Adj
+
+1.0 ADVP  Rb    ADVP
+1.0 ADVP  Rb
+
+0.1 PP	Prep NP
+
+############ YES/NO QUESTION   ##############
+
+1.0 YNQ AUX NP Vp_intran            # can sally work ?
+1.0 YNQ AUX NP Vp_trans NP          # does sally eat an apple ?
+
+1.0 YNQ AUX NP Vp_sconj SBAR        # does the president think that Sally worked ?
+1.0 YNQ AUX NP Vp_prep PP           # does sally work with the president ?
+
+1.0 YNQ AUX Prp Vp_np_sconj NP SBAR # did it perplex sally that Sally ate an apple ?
+
+#######  Question is .... ? #########
+
+1.0 YNQ Vbz NP Vbg NP               # is Sally eating an apple ?
+1.0 YNQ Vbz NP NP                   # is Sally an orange ?
+1.0 YNQ Vbz NP ADJP                 # is Sally delicious ?
+1.0 YNQ Vbz NP ADJP Cconj ADJP      # is Sally delicious and lazy ?
+1.0 YNQ Vbz NP VowAdj               # is Sally intelligent ?
+1.0 YNQ Vbz NP VowAdj Cconj ADJP    # is Sally intelligent and delicious ?
+1.0 YNQ Vbz NP ADJP Cconj VowAdj    # is Sally delicious and intelligent ?
+1.0 YNQ Vbz NP VowAdj Cconj VowAdj  # is Sally actual and intelligent ?
+
+1.0  Vp_trans eat
+1.0  Vp_trans want
+1.0  Vp_trans work
+1.0  Vp_trans love
+1.0  Vp_trans want
+1.0 Vp_trans understand
+0.5 Vp_trans Vp_trans Cconj Vp_trans # eat and love
+
+
+1.0 Vp_intran work
+1.0 Vp_intran eat
+1.0 Vp_intran sigh
+0.2 Vp_trans Vp_intran Cconj Vp_intran # work and eat
+
+
+1.0 AUX did
+1.0 AUX will
+1.0 AUX does
+1.0 AUX can
+#1.0 AUX is
+
+
+# Vocabulary.  Your program can see that "ate" is a terminal
+# symbol because there exists no rule for rewriting it.
+# Any symbol that can rewrite as a terminal (or a string of
+# terminals, like "chief of staff") is called a "preterminal."  Notice
+# that a preterminal is a special kind of nonterminal.
+
+1.0 Cconj   and
+1.0 Sconj   that
+
+1.0 Vbz is
+
+1.0 Vbg eating
+1.0 Vbg doing
+
+1.0 Vbd	ate
+1.0 Vbd	wanted
+1.0 Vbd	kissed
+1.0 Vbd	pickled
+1.0 Vbd perplexed
+1.0 Vbd understood
+
+# Past form verbs that are intransitive (Read and see examples about this phenomena over here - https://www.citationmachine.net/resources/grammar-guides/verb/transitive-intransitive/#:~:text=When%20there's%20an%20object%20in,word%20is%20an%20intransitive%20verb.)
+1.0 Vbd_intran	ate
+1.0 Vbd_intran	sighed
+1.0 Vbd_intran worked
+
+# Past form verbs + that-clause (Read and see examples about this phenomena over here - https://dictionary.cambridge.org/grammar/british-grammar/verb-patterns-verb-that-clause)
+1.0 Vbd_sconj understood
+1.0 Vbd_sconj thought
+1.0 Vbd_sconj felt
+
+# Present form verbs + that-clause
+1.0 Vp_sconj understand
+1.0 Vp_sconj think
+1.0 Vp_sconj feel
+1.0 Vp_sconj want
+
+# Present form verb + prep
+1.0 Vp_prep work
+1.0 Vp_prep eat
+1.0 Vp_prep sigh
+
+
+# Past form verbs followed by an indirect object and a that-clause (Read and see examples about this phenomena over here - https://dictionary.cambridge.org/grammar/british-grammar/verb-patterns-verb-that-clause)
+1.0 Vbd_np_sconj perplexed
+
+# Present form verbs followed by an indirect object and a that-clause
+1.0 Vp_np_sconj perplex
+
+# Past form verbs + a preposition
+1.0 Vbd_prep  ate
+1.0 Vbd_prep  sighed
+1.0 Vbd_prep  worked
+
+1.0	Det	the
+0.01    Det	every
+
+1.0 Nnp sally
+1.0 Prp it
+
+1.0	Noun	president
+1.0	Noun	sandwich
+1.0	Noun	pickle
+1.0	Noun	chief of staff
+1.0	Noun	floor
+1.0 Noun	proposal
+1.0 Noun	desk
+
+1.0 VowNoun apple
+1.0 VowNoun orange
+1.0 VowNoun artist
+1.0 VowNoun hour
+1.0 VowNoun authority
+1.0 VowNoun opinion
+
+1.0	Adj	fine
+1.0	Adj	delicious
+1.0	Adj	perplexed
+1.0	Adj	pickled
+1.0 Adj lazy
+
+1.0 VowAdj easy
+1.0 VowAdj hard
+1.0 VowAdj important
+1.0 VowAdj actual
+1.0 VowAdj intelligent
+1.0 VowAdj old
+
+
+1.0 Rb  very
+
+0.7	Prep	with
+1.0	Prep	on
+1.0	Prep	under
+1.0	Prep	in
