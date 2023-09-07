@@ -1,7 +1,8 @@
 # Grammar-Writing
 Second Assignment in 'NLP - Natural Languages Processing' course by Prof. Yoav Goldberg, Prof. Ido Dagan and Prof. Reut Tsarfaty at Bar-Ilan University.
 
-Goal: Understanding how Context-Free Grammars (CFGs) work, and how they can be used - sometimes comfortably, sometimes not so much - to describe natural language. It made me think about some linguistic phenomena that are interesting in their own right.
+Goal: 
+Understanding how Context-Free Grammars (CFGs) work, and how they can be used - sometimes comfortably, sometimes not so much - to describe natural language. It made me think about some linguistic phenomena that are interesting in their own right.
 
 The assignment consists of the following parts:
 - Part 0 - Generating Sentences from a CFG
